@@ -1,0 +1,50 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v6
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Run tests
+        run: python -m unittest -v
+      - name: Install package
+        run: python -m pip install .
+      - name: Smoke test installed commands
+        run: |
+          worse-gpu-demo --steps 3 --delay 0 --json
+          worse-gpu-benchmark --steps 3 --json
+
+  quality:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v6
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Install quality tools
+        run: python -m pip install ".[dev]"
+      - name: Lint
+        run: ruff check .
+      - name: Type check
+        run: >
+          mypy --strict worse_gpu_allocator.py benchmark.py demo.py
+          test_worse_gpu_allocator.py test_security.py test_features.py
+          test_robustness.py test_fuzz.py
