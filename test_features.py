@@ -35,6 +35,23 @@ class FeatureTests(unittest.TestCase):
         self.assertEqual(allocator.trace(), ())
         self.assertEqual(allocator.snapshot()["trace_events"], 0)
 
+    def test_reclaim_forgotten_returns_leaked_blocks(self) -> None:
+        allocator = WorseGPUAllocator(
+            gpu_probability=1.0,
+            forget_probability=1.0,
+            trace_limit=10,
+            seed=1,
+        )
+        handle = allocator.allocate(1000)
+        self.assertFalse(allocator.free(handle))
+        self.assertGreater(allocator.snapshot()["gpu_forgotten"], 0)
+
+        reclaimed = allocator.reclaim_forgotten()
+        self.assertEqual(reclaimed, 1)
+        self.assertEqual(allocator.snapshot()["gpu_forgotten"], 0)
+        self.assertEqual(allocator.reclaim_forgotten(), 0)
+        allocator.validate_invariants()
+
     def test_benchmark_report_is_json_serializable(self) -> None:
         report = run_benchmark(steps=12, seed=3, capacity=1 << 20)
         encoded = json.dumps(report)

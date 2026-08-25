@@ -19,7 +19,7 @@ ROOT = Path(__file__).parent
 
 class RobustnessTests(unittest.TestCase):
     def test_module_version_matches_current_release(self) -> None:
-        self.assertEqual(__version__, "0.9.0")
+        self.assertEqual(__version__, "0.9.1")
         metadata = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
         match = re.search(r'^version = "([^"]+)"$', metadata, re.MULTILINE)
         if match is None:

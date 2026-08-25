@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.9.1
+
+- Added `reclaim_forgotten()` to sweep leaked blocks back into the free pool.
+- Added a `reclaim_forgotten` trace event.
+
 ## 0.2.0
 
 - Added strict input validation and a configurable request-size limit.

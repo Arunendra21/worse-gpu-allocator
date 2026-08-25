@@ -20,7 +20,7 @@ from dataclasses import dataclass, field
 from threading import RLock
 from typing import Literal
 
-__version__ = "0.9.0"
+__version__ = "0.9.1"
 MAX_TRACE_LIMIT = 1_000_000
 __all__ = [
     "MAX_TRACE_LIMIT",
@@ -364,6 +364,30 @@ class WorseGPUAllocator:
 
         with self._lock:
             self._trace_events.clear()
+
+    def reclaim_forgotten(self) -> int:
+        """Recover blocks that ``free`` forgot to release.
+
+        A real allocator would never leak like this, but since ours does, this
+        gives callers a way to sweep the arena and return every forgotten block
+        to the free pool. Returns the number of blocks reclaimed.
+        """
+
+        with self._lock:
+            reclaimed = 0
+            for block in self._blocks:
+                if block.forgotten:
+                    block.forgotten = False
+                    reclaimed += 1
+            if reclaimed:
+                self._record_event(
+                    {
+                        "operation": "reclaim_forgotten",
+                        "reclaimed_blocks": reclaimed,
+                        "device": "gpu",
+                    }
+                )
+            return reclaimed
 
     def _allocate_cpu(self, requested_bytes: int, reason: str) -> Allocation:
         allocation = Allocation(
